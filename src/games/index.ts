@@ -27,3 +27,13 @@ export function getRandomGame(exclude: string): { name: string; game: Game } {
   const name = candidates[Math.floor(Math.random() * candidates.length)];
   return { name, game: createGame(name) };
 }
+
+const gameDisplayNames: Record<string, string> = {
+  ball: "Ball Game",
+  "color-chase": "Color Chase",
+  typing: "Typing Game",
+};
+
+export function getDisplayName(name: string): string {
+  return gameDisplayNames[name] ?? name;
+}
