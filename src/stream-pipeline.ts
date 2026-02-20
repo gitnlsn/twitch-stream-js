@@ -1,11 +1,19 @@
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, spawn, execSync } from "child_process";
 import path from "path";
 import { config } from "./config";
 
 let ffmpegProcess: ChildProcess | null = null;
 
+function findFfmpeg(): string {
+  try {
+    return execSync("which ffmpeg", { encoding: "utf-8" }).trim();
+  } catch {
+    return "ffmpeg"; // fall back to PATH lookup by spawn
+  }
+}
+
 export function startStreamPipeline(): ChildProcess {
-  const ffmpegPath = "/usr/bin/ffmpeg";
+  const ffmpegPath = findFfmpeg();
   const { width, height, fps } = config.stream;
   const rtmpUrl = `rtmp://live.twitch.tv/app/${config.twitch.streamKey}`;
 

@@ -2,11 +2,13 @@ import { Game } from "../types";
 import { BallGame } from "./ball-game";
 import { ColorChaseGame } from "./color-chase-game";
 import { TypingGame } from "./typing-game";
+import { TriviaGame } from "./trivia-game";
 
 const gameRegistry: Record<string, () => Game> = {
   ball: () => new BallGame(),
   "color-chase": () => new ColorChaseGame(),
   typing: () => new TypingGame(),
+  trivia: () => new TriviaGame(),
 };
 
 export function createGame(name: string): Game {
@@ -32,6 +34,7 @@ const gameDisplayNames: Record<string, string> = {
   ball: "Ball Game",
   "color-chase": "Color Chase",
   typing: "Typing Game",
+  trivia: "Trivia",
 };
 
 export function getDisplayName(name: string): string {
