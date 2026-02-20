@@ -1,7 +1,7 @@
 import { config } from "./config";
-import { createGame, getRandomGame } from "./games";
+import { createGame, getRandomGame, getDisplayName } from "./games";
 import { startStreamPipeline, stopStreamPipeline } from "./stream-pipeline";
-import { startGameLoop, stopGameLoop, swapGame, setVoteManager, getCurrentGame } from "./game-loop";
+import { startGameLoop, stopGameLoop, swapGame, setVoteManager, getCurrentGame, getChatOverlay } from "./game-loop";
 import { startChatHandler, stopChatHandler } from "./chat-handler";
 import { VoteManager } from "./vote-manager";
 
@@ -36,6 +36,7 @@ function main() {
 
   // Set up vote manager
   const voteManager = new VoteManager();
+  const chatOverlay = getChatOverlay();
 
   // Start FFmpeg stream pipeline
   startStreamPipeline();
@@ -49,6 +50,9 @@ function main() {
     // Track activity for every command
     voteManager.recordActivity(cmd.username);
 
+    // Feed every command to chat overlay
+    chatOverlay.addMessage(cmd.username, `!${cmd.command}${cmd.args.length ? " " + cmd.args.join(" ") : ""}`);
+
     // Handle !skip votes
     if (cmd.command === "skip") {
       const result = voteManager.recordSkipVote(cmd.username);
@@ -56,7 +60,8 @@ function main() {
 
       if (result.triggered) {
         const { name, game: newGame } = getRandomGame(currentGameName);
-        swapGame(newGame);
+        const displayName = getDisplayName(name);
+        swapGame(newGame, displayName);
         voteManager.reset();
         console.log(`[vote] Threshold reached! Switching game: ${currentGameName} -> ${name}`);
         currentGameName = name;

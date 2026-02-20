@@ -7,6 +7,7 @@ export interface ChatCommand {
 }
 
 export interface Game {
+  readonly displayName?: string;
   init(width: number, height: number): void;
   update(deltaMs: number): void;
   render(ctx: CanvasRenderingContext2D): void;

@@ -3,20 +3,33 @@ import { config } from "./config";
 import { Game } from "./types";
 import { writeFrame } from "./stream-pipeline";
 import { VoteManager } from "./vote-manager";
+import { TransitionOverlay } from "./ui/transition-overlay";
+import { ChatOverlay } from "./ui/chat-overlay";
+import { drawPanel, drawLabel } from "./ui/hud";
 
 let running = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let currentGame: Game;
 let voteManager: VoteManager | null = null;
 
+const transitionOverlay = new TransitionOverlay();
+const chatOverlay = new ChatOverlay();
+
+export function getChatOverlay(): ChatOverlay {
+  return chatOverlay;
+}
+
 export function setVoteManager(vm: VoteManager): void {
   voteManager = vm;
 }
 
-export function swapGame(newGame: Game): void {
+export function swapGame(newGame: Game, displayName?: string): void {
   const { width, height } = config.stream;
   newGame.init(width, height);
   currentGame = newGame;
+  if (displayName) {
+    transitionOverlay.trigger(displayName);
+  }
 }
 
 export function getCurrentGame(): Game {
@@ -45,29 +58,44 @@ export function startGameLoop(game: Game): void {
 
     // Update game state
     currentGame.update(deltaMs);
+    chatOverlay.update(deltaMs);
+    transitionOverlay.update(deltaMs);
 
     // Render
     ctx.clearRect(0, 0, width, height);
+
+    // 1. Game renders its own content + top bar
     currentGame.render(ctx);
 
-    // Vote HUD overlay
+    // 2. Chat overlay — bottom-left
+    chatOverlay.render(ctx, width, height);
+
+    // 3. Vote HUD — bottom-right (styled panel)
     if (voteManager) {
       const votes = voteManager.getVoteCount();
       const needed = voteManager.getNeededVotes();
       if (votes > 0) {
-        const text = `Skip votes: ${votes}/${needed} (60% needed)`;
-        ctx.font = "bold 16px sans-serif";
+        const text = `Skip: ${votes}/${needed}`;
+        ctx.font = "bold 14px sans-serif";
         const metrics = ctx.measureText(text);
-        const px = width - metrics.width - 16;
-        const py = height - 16;
+        const panelW = metrics.width + 24;
+        const panelH = 28;
+        const px = width - panelW - 12;
+        const py = height - panelH - 12;
 
-        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        ctx.fillRect(px - 8, py - 16, metrics.width + 16, 24);
-
-        ctx.fillStyle = "#ff6b6b";
-        ctx.fillText(text, px, py);
+        drawPanel(ctx, px, py, panelW, panelH, {
+          bg: "rgba(0, 0, 0, 0.6)",
+          border: "rgba(255, 107, 107, 0.4)",
+        });
+        drawLabel(ctx, px + 12, py + 19, text, {
+          font: "bold 14px sans-serif",
+          color: "#ff6b6b",
+        });
       }
     }
+
+    // 4. Transition overlay — full-screen scrim on top
+    transitionOverlay.render(ctx, width, height);
 
     // Extract raw RGBA buffer and pipe to FFmpeg
     const buffer = canvas.toBufferSync("raw");
