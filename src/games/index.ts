@@ -1,8 +1,12 @@
 import { Game } from "../types";
 import { BallGame } from "./ball-game";
+import { ColorChaseGame } from "./color-chase-game";
+import { TypingGame } from "./typing-game";
 
 const gameRegistry: Record<string, () => Game> = {
   ball: () => new BallGame(),
+  "color-chase": () => new ColorChaseGame(),
+  typing: () => new TypingGame(),
 };
 
 export function createGame(name: string): Game {
@@ -12,4 +16,14 @@ export function createGame(name: string): Game {
     throw new Error(`Unknown game "${name}". Available games: ${available}`);
   }
   return factory();
+}
+
+export function getAvailableGames(): string[] {
+  return Object.keys(gameRegistry);
+}
+
+export function getRandomGame(exclude: string): { name: string; game: Game } {
+  const candidates = Object.keys(gameRegistry).filter((n) => n !== exclude);
+  const name = candidates[Math.floor(Math.random() * candidates.length)];
+  return { name, game: createGame(name) };
 }

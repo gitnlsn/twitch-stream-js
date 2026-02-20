@@ -1,8 +1,9 @@
 import { config } from "./config";
-import { createGame } from "./games";
+import { createGame, getRandomGame } from "./games";
 import { startStreamPipeline, stopStreamPipeline } from "./stream-pipeline";
-import { startGameLoop, stopGameLoop } from "./game-loop";
+import { startGameLoop, stopGameLoop, swapGame, setVoteManager, getCurrentGame } from "./game-loop";
 import { startChatHandler, stopChatHandler } from "./chat-handler";
+import { VoteManager } from "./vote-manager";
 
 function shutdown() {
   console.log("\n[main] Shutting down...");
@@ -29,18 +30,42 @@ function main() {
   }
 
   // Create the game
-  const game = createGame(config.game);
-  console.log(`[main] Loaded game: ${config.game}`);
+  let currentGameName = config.game;
+  const initialGame = createGame(currentGameName);
+  console.log(`[main] Loaded game: ${currentGameName}`);
+
+  // Set up vote manager
+  const voteManager = new VoteManager();
 
   // Start FFmpeg stream pipeline
   startStreamPipeline();
 
   // Start the game loop (renders frames and pipes to FFmpeg)
-  startGameLoop(game);
+  setVoteManager(voteManager);
+  startGameLoop(initialGame);
 
   // Start chat handler (forwards commands to the game)
   startChatHandler((cmd) => {
-    game.handleChatCommand(cmd);
+    // Track activity for every command
+    voteManager.recordActivity(cmd.username);
+
+    // Handle !skip votes
+    if (cmd.command === "skip") {
+      const result = voteManager.recordSkipVote(cmd.username);
+      console.log(`[vote] ${cmd.username} voted to skip (${result.votes}/${result.needed})`);
+
+      if (result.triggered) {
+        const { name, game: newGame } = getRandomGame(currentGameName);
+        swapGame(newGame);
+        voteManager.reset();
+        console.log(`[vote] Threshold reached! Switching game: ${currentGameName} -> ${name}`);
+        currentGameName = name;
+      }
+      return;
+    }
+
+    // Forward other commands to the current game
+    getCurrentGame().handleChatCommand(cmd);
   });
 
   // Graceful shutdown
