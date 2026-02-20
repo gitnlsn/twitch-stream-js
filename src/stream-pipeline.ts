@@ -5,7 +5,7 @@ import { config } from "./config";
 let ffmpegProcess: ChildProcess | null = null;
 
 export function startStreamPipeline(): ChildProcess {
-  const ffmpegPath = require("ffmpeg-static") as string;
+  const ffmpegPath = "/usr/bin/ffmpeg";
   const { width, height, fps } = config.stream;
   const rtmpUrl = `rtmp://live.twitch.tv/app/${config.twitch.streamKey}`;
 
@@ -37,6 +37,15 @@ export function startStreamPipeline(): ChildProcess {
 
   ffmpegProcess = spawn(ffmpegPath, args, {
     stdio: ["pipe", "ignore", "pipe"],
+  });
+
+  // Handle stdin errors (e.g., EPIPE when FFmpeg exits)
+  ffmpegProcess.stdin!.on("error", (err) => {
+    if ((err as NodeJS.ErrnoException).code === "EPIPE") {
+      console.log("[stream] FFmpeg stdin closed (stream ended)");
+    } else {
+      console.error("[stream] FFmpeg stdin error:", err.message);
+    }
   });
 
   ffmpegProcess.stderr!.on("data", (data: Buffer) => {
