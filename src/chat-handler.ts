@@ -1,10 +1,21 @@
 import tmi from "tmi.js";
 import { config } from "./config";
-import { ChatCommand } from "./types";
+import { ChatCommand, ChatMessage } from "./types";
 
 let client: tmi.Client | null = null;
 
-export function startChatHandler(onCommand: (cmd: ChatCommand) => void): void {
+export function say(message: string): void {
+  if (client) {
+    client.say(config.twitch.channel, message).catch((err) => {
+      console.error("[chat] Failed to send message:", err);
+    });
+  }
+}
+
+export function startChatHandler(
+  onCommand: (cmd: ChatCommand) => void,
+  onMessage: (msg: ChatMessage) => void,
+): void {
   const opts: tmi.Options = {
     channels: [config.twitch.channel],
     connection: {
@@ -27,7 +38,11 @@ export function startChatHandler(onCommand: (cmd: ChatCommand) => void): void {
     if (self) return;
 
     const trimmed = message.trim();
-    if (!trimmed.startsWith("!")) return;
+    if (!trimmed.startsWith("!")) {
+      const username = tags["display-name"] || tags.username || "anonymous";
+      onMessage({ username, message: trimmed });
+      return;
+    }
 
     const parts = trimmed.slice(1).split(/\s+/);
     const command = parts[0].toLowerCase();

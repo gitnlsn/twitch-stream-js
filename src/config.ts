@@ -13,5 +13,8 @@ export const config = {
     height: parseInt(process.env.STREAM_HEIGHT || "720", 10),
     fps: parseInt(process.env.STREAM_FPS || "30", 10),
   },
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || "",
+  },
   game: process.env.GAME || "ball",
 };

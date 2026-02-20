@@ -24,6 +24,7 @@ export function setVoteManager(vm: VoteManager): void {
 }
 
 export function swapGame(newGame: Game, displayName?: string): void {
+  if (currentGame?.destroy) currentGame.destroy();
   const { width, height } = config.stream;
   newGame.init(width, height);
   currentGame = newGame;

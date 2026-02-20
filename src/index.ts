@@ -2,8 +2,9 @@ import { config } from "./config";
 import { createGame, getRandomGame, getDisplayName } from "./games";
 import { startStreamPipeline, stopStreamPipeline } from "./stream-pipeline";
 import { startGameLoop, stopGameLoop, swapGame, setVoteManager, getCurrentGame, getChatOverlay } from "./game-loop";
-import { startChatHandler, stopChatHandler } from "./chat-handler";
+import { startChatHandler, stopChatHandler, say } from "./chat-handler";
 import { VoteManager } from "./vote-manager";
+import { initGemini, geminiCollect } from "./gemini";
 
 function shutdown() {
   console.log("\n[main] Shutting down...");
@@ -45,6 +46,12 @@ function main() {
   setVoteManager(voteManager);
   startGameLoop(initialGame);
 
+  // Initialize Gemini for conversational chat
+  initGemini((text) => say(text), () => getDisplayName(currentGameName));
+  if (config.gemini.apiKey && (!config.twitch.oauthToken || !config.twitch.botUsername)) {
+    console.warn("[main] Warning: Gemini is enabled but TWITCH_OAUTH_TOKEN / TWITCH_BOT_USERNAME are missing — bot cannot send messages");
+  }
+
   // Start chat handler (forwards commands to the game)
   startChatHandler((cmd) => {
     // Track activity for every command
@@ -71,6 +78,9 @@ function main() {
 
     // Forward other commands to the current game
     getCurrentGame().handleChatCommand(cmd);
+  }, (msg) => {
+    chatOverlay.addMessage(msg.username, msg.message);
+    geminiCollect(msg);
   });
 
   // Graceful shutdown

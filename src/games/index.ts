@@ -1,14 +1,14 @@
 import { Game } from "../types";
 import { BallGame } from "./ball-game";
-import { ColorChaseGame } from "./color-chase-game";
-import { TypingGame } from "./typing-game";
+import { ScrambleGame } from "./typing-game";
 import { TriviaGame } from "./trivia-game";
+import { ChessGame } from "./chess-game";
 
 const gameRegistry: Record<string, () => Game> = {
   ball: () => new BallGame(),
-  "color-chase": () => new ColorChaseGame(),
-  typing: () => new TypingGame(),
+  scramble: () => new ScrambleGame(),
   trivia: () => new TriviaGame(),
+  chess: () => new ChessGame(),
 };
 
 export function createGame(name: string): Game {
@@ -32,9 +32,9 @@ export function getRandomGame(exclude: string): { name: string; game: Game } {
 
 const gameDisplayNames: Record<string, string> = {
   ball: "Ball Game",
-  "color-chase": "Color Chase",
-  typing: "Typing Game",
+  scramble: "Word Scramble",
   trivia: "Trivia",
+  chess: "Chess vs Stockfish",
 };
 
 export function getDisplayName(name: string): string {

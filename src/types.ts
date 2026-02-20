@@ -6,10 +6,16 @@ export interface ChatCommand {
   args: string[];
 }
 
+export interface ChatMessage {
+  username: string;
+  message: string;
+}
+
 export interface Game {
   readonly displayName?: string;
   init(width: number, height: number): void;
   update(deltaMs: number): void;
   render(ctx: CanvasRenderingContext2D): void;
   handleChatCommand(cmd: ChatCommand): void;
+  destroy?(): void;
 }
